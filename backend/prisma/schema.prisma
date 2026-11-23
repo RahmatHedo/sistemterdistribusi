@@ -1,0 +1,36 @@
+// Skema database untuk aplikasi chat terdistribusi
+// Gunakan MySQL sebagai provider
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now())
+
+  sentMessages     Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+}
+
+model Message {
+  id              Int      @id @default(autoincrement())
+  clientMessageId String   @unique // Mencegah pesan duplikat saat reconnect
+  senderId        Int
+  receiverId      Int
+  content         String   @db.Text
+  createdAt       DateTime @default(now())
+
+  sender   User @relation("SentMessages", fields: [senderId], references: [id])
+  receiver User @relation("ReceivedMessages", fields: [receiverId], references: [id])
+
+  // Index untuk query riwayat chat yang efisien
+  @@index([senderId, receiverId, createdAt])
+}
